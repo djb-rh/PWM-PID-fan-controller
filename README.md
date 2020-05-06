@@ -1,7 +1,5 @@
 # pid-controller
 
-A Particle project named pid-controller
-
 This is a sketch created using some sample code for clickButton, the SHT31 NCD device, the PID library, and some glue from me.
 
 It actually does two things...it shows me the status of my gate controllers, which is probably useless for most folks.  But it 
@@ -30,11 +28,11 @@ creating heat and the room temperature can vary some as well.
 So I'm working on this controller.  As of this initial commit the controller appears to work.  Now to build my new exchanger
 box (it'll have a HEPA filter on it, which my previous manually controlled one didn't) and tweak the code more.
 
-Future enhancements I want:
+# Future enhancements
 
-. Store the last set temp in EEPROM
-. add two more buttons to be able to control my gates
-. get stabilized and remove all the gate code to a separate module somehow for folks that only want a basic PID controller
+- Store the last set temp in EEPROM
+- add two more buttons to be able to control my gates
+- get stabilized and remove all the gate code to a separate module somehow for folks that only want a basic PID controller
 
 
 Everything below auto-added by Particle CLI
