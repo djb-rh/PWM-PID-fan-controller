@@ -1,3 +1,9 @@
+/*
+
+  Written by djb@donniebarnes.com. Placed in the public domain. Do with it what you will.
+
+*/
+
 #include <pid.h>
 #include <LiquidCrystal_I2C_Spark.h>
 #include <clickButton.h>
