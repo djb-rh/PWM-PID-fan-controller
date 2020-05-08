@@ -92,7 +92,8 @@ void setup()
 
 	Serial.begin(115200);
     lcd.init();  //initialize the lcd
-    lcd.backlight();  //open the backlight 
+    lcd.backlight();  // turn backlight on
+    // lcd.nobacklight();  // turn backlight off
   
     lcd.setCursor (0, 0 );            // go to the top left corner
     lcd.print("Main Gate: DUNNO"); // write this string on the top row

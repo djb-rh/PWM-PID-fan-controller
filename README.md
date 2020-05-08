@@ -28,6 +28,10 @@ creating heat and the room temperature can vary some as well.
 So I'm working on this controller.  As of this initial commit the controller appears to work.  Now to build my new exchanger
 box (it'll have a HEPA filter on it, which my previous manually controlled one didn't) and tweak the code more.
 
+Docs for the LCD I used are here:
+
+http://wiki.sunfounder.cc/index.php?title=I2C_LCD2004
+
 # Future enhancements
 
 - Store the last set temp in EEPROM
