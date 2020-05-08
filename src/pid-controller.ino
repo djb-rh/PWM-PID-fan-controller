@@ -73,6 +73,9 @@ void setup()
     Particle.subscribe("main_gate_1", maingateHandler, MY_DEVICES);
     Particle.subscribe("clubhouse_gate_1", clubgateHandler, MY_DEVICES);
 
+    // do a request for the state and the above subscribes will get called when they see the request
+    Particle.publish("getstate", "1", PRIVATE);
+
     // setup some buttons
     pinMode(pinYellow, INPUT_PULLUP);
     pinMode(pinBlue, INPUT_PULLUP);
