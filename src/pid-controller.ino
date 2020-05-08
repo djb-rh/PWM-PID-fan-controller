@@ -27,6 +27,8 @@ int fanpin = D3;
 int pinYellow = D6;
 int pinBlue = D7;
 
+int backlight = 1;
+
 ClickButton buttonYellow(pinYellow, LOW, CLICKBTN_PULLUP);
 ClickButton buttonBlue(pinBlue, LOW, CLICKBTN_PULLUP);
 
@@ -54,7 +56,7 @@ double kd=1;   //derivative parameter
 double commandMin = 90;
 double commandMax = 255;
 // default starter temp. 
-double setTemp = 72;
+double setTemp = 66;
 
 // declare my PID. Give it the temp from the sensor, the fanspeed variable to set, the target temp, 
 // the proportioning parameters, and make it REVERSE, which means target cooling.
@@ -63,11 +65,12 @@ PID myPID(&fTemp, &fanspeed, &setTemp, kp, ki, kd, PID::REVERSE);
 /* This function is called once at start up ----------------------------------*/
 void setup()
 {
-    
-    // some variables we can watch with the Particle app
-    // Particle.variable("fanspeed", fanspeed);
+   
     Particle.variable("fTemp", fTemp);
     Particle.variable("humidity", humidity);
+    Particle.variable("fanspeed", fanspeed);
+
+    Particle.function("backlight", backlightSet);
     
     // listen to turn on or off from main gate ID and call a handler if it changes, same for clubhouse gate
     Particle.subscribe("main_gate_1", maingateHandler, MY_DEVICES);
@@ -95,8 +98,9 @@ void setup()
 
 	Serial.begin(115200);
     lcd.init();  //initialize the lcd
-    lcd.backlight();  // turn backlight on
-    // lcd.nobacklight();  // turn backlight off
+
+    if (backlight) lcd.backlight();  // turn backlight on
+    else lcd.noBacklight();  // turn backlight off
   
     lcd.setCursor (0, 0 );            // go to the top left corner
     lcd.print("Main Gate: DUNNO"); // write this string on the top row
@@ -259,5 +263,14 @@ int djbRelay(String command){
 		return 1;
 	}
 	return 0;
+}
+
+int backlightSet(String command){
+	if(command.equalsIgnoreCase("on")){
+		lcd.backlight();
+		return 1;
+	}
+	else lcd.noBacklight();
+	return 1;
 }
 
