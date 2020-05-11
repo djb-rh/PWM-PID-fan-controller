@@ -37,6 +37,7 @@ http://wiki.sunfounder.cc/index.php?title=I2C_LCD2004
 - Store the last set temp in EEPROM
 - add two more buttons to be able to control my gates
 - get stabilized and remove all the gate code to a separate module somehow for folks that only want a basic PID controller
+- add O2 sensor support with altitude conversion
 
 
 Everything below auto-added by Particle CLI
