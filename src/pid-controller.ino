@@ -12,6 +12,8 @@
 #include <application.h>
 #include <spark_wiring_i2c.h>
 
+#include "elapsedMillis.h"
+
 // SHT31 I2C address is 0x44(68)
 #define Addr 0x44
 
@@ -27,7 +29,10 @@ int fanpin = D3;
 int pinYellow = D6;
 int pinBlue = D7;
 
-int backlight = 1;
+// This all uses the elapsedMillis library to setup the ability to turn on the backlight for 10s at a time
+#define LCD_BACKLIGHT_INTERVAL 10000
+elapsedMillis lcdBacklightInterval;
+bool backlight = false;
 
 ClickButton buttonYellow(pinYellow, LOW, CLICKBTN_PULLUP);
 ClickButton buttonBlue(pinBlue, LOW, CLICKBTN_PULLUP);
@@ -56,11 +61,12 @@ double kd=1;   //derivative parameter
 double commandMin = 90;
 double commandMax = 255;
 // default starter temp. 
-double setTemp = 66;
+double setTemp = 64.5;
 
 // declare my PID. Give it the temp from the sensor, the fanspeed variable to set, the target temp, 
 // the proportioning parameters, and make it REVERSE, which means target cooling.
 PID myPID(&fTemp, &fanspeed, &setTemp, kp, ki, kd, PID::REVERSE);
+
 
 /* This function is called once at start up ----------------------------------*/
 void setup()
@@ -99,8 +105,9 @@ void setup()
 	Serial.begin(115200);
     lcd.init();  //initialize the lcd
 
-    if (backlight) lcd.backlight();  // turn backlight on
-    else lcd.noBacklight();  // turn backlight off
+    // turn on the backlight at boot time (it'll turn off after 10s)
+    lcd.backlight();  // turn backlight on
+    backlight = true;
   
     lcd.setCursor (0, 0 );            // go to the top left corner
     lcd.print("Main Gate: DUNNO"); // write this string on the top row
@@ -131,19 +138,33 @@ void loop()
     
     if (buttonYellowClicks == 1) 
     {
-        setTemp = setTemp+0.5;
-        lcd.setCursor(16,2);
-        sprintf(publishString, "%3.1f", setTemp);
-        lcd.print(publishString);
+        if (!backlight) { // if backlight is OFF
+            lcd.backlight(); // turn backlight on
+            backlight = true; // backlight is now on
+            lcdBacklightInterval = 0;
+        } else {
+	        setTemp = setTemp+0.5;
+	        lcd.setCursor(16,2);
+	        sprintf(publishString, "%3.1f", setTemp);
+	        lcd.print(publishString);
+                lcdBacklightInterval = 0; // reset the interval timer
+        }
 
     }
     
     if (buttonBlueClicks == 1) 
     {
-        setTemp = setTemp-0.5;
-        lcd.setCursor(16,2);
-        sprintf(publishString, "%3.1f", setTemp);
-        lcd.print(publishString);
+        if (!backlight) { // if backlight is OFF
+            lcd.backlight(); // turn backlight on
+            backlight = true; // backlight is now on
+            lcdBacklightInterval = 0;
+        } else {
+	        setTemp = setTemp-0.5;
+	        lcd.setCursor(16,2);
+	        sprintf(publishString, "%3.1f", setTemp);
+	        lcd.print(publishString);
+                lcdBacklightInterval = 0; // reset the interval timer
+        }
 
     }
     
@@ -206,7 +227,12 @@ void loop()
     sprintf(publishString, "%3.0f", fanspeed);
     lcd.print(publishString);
 
-    // delay(100);
+    if (backlight) { // if backlight is on
+        if (lcdBacklightInterval > LCD_BACKLIGHT_INTERVAL) { // check to see if it's time to turn it off
+            backlight = false; // set the state to off
+            lcd.noBacklight(); // turn it off
+        }
+    }
 
 }
 
@@ -268,9 +294,14 @@ int djbRelay(String command){
 int backlightSet(String command){
 	if(command.equalsIgnoreCase("on")){
 		lcd.backlight();
+                backlight = true;
+                lcdBacklightInterval = 0; // reset the counter to 0 because it just turned on
 		return 1;
 	}
-	else lcd.noBacklight();
+	else {
+            lcd.noBacklight();
+            backlight = false;
+        }
 	return 1;
 }
 
