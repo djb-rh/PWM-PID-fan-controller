@@ -30,7 +30,7 @@ int pinYellow = D6;
 int pinBlue = D7;
 
 // This all uses the elapsedMillis library to setup the ability to turn on the backlight for 10s at a time
-#define LCD_BACKLIGHT_INTERVAL 10000
+#define LCD_BACKLIGHT_INTERVAL 100000
 elapsedMillis lcdBacklightInterval;
 bool backlight = false;
 
@@ -49,16 +49,18 @@ int clubstatus(String command);
 
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars and 4 line display
 
-//PID parameters. I'm using defaults with quite nice results
-double kp=2;   //proportional parameter
-double ki=5;   //integral parameter
+// double kp=2;   //proportional parameter
+// double ki=5;   //integral parameter
+// double kd=1;   //derivative parameter
+double kp=100;   //proportional parameter
+double ki=1.5;   //integral parameter
 double kd=1;   //derivative parameter
 // Minimum and Maximum PWM command, according fan specs and noise level required
 // My fans draw 1.05A at full bore but my power supply is a 2A (24V), so I may need to put a meter
 // on it and see what Max would keep it at 1A. The fans also won't start up to something below 
 // around 50 maybe, so I need to be above that. But 90 is fine as they are always going to need
 // more cooling than that.
-double commandMin = 90;
+double commandMin = 70;
 double commandMax = 255;
 // default starter temp. 
 double setTemp = 64.5;
@@ -75,8 +77,14 @@ void setup()
     Particle.variable("fTemp", fTemp);
     Particle.variable("humidity", humidity);
     Particle.variable("fanspeed", fanspeed);
+    Particle.variable("kp", kp);
+    Particle.variable("ki", ki);
+    Particle.variable("kd", kd);
 
     Particle.function("backlight", backlightSet);
+    Particle.function("kp", kpSet);
+    Particle.function("ki", kiSet);
+    Particle.function("kd", kdSet);
     
     // listen to turn on or off from main gate ID and call a handler if it changes, same for clubhouse gate
     Particle.subscribe("main_gate_1", maingateHandler, MY_DEVICES);
@@ -95,9 +103,9 @@ void setup()
     digitalWrite(relayPin, HIGH); // turn on relay at startup
     
     // variables that need to be setup for the button debounce library
-    buttonYellow.debounceTime   = 20;   // Debounce timer in ms
-    buttonYellow.multiclickTime = 250;  // Time limit for multi clicks
-    buttonYellow.longClickTime  = 1000; // time until "held-down clicks" register
+    // buttonYellow.debounceTime   = 20;   // Debounce timer in ms
+    // buttonYellow.multiclickTime = 250;  // Time limit for multi clicks
+    // buttonYellow.longClickTime  = 1000; // time until "held-down clicks" register
     
     // some things we can set from the Particle app
     Particle.function("relayState", djbRelay);
@@ -212,10 +220,10 @@ void loop()
     humidity = 100 * ((data[3] * 256) + data[4]) / 65535.0;
 
     lcd.setCursor(0, 2);
-    sprintf(publishString, "Temp %2.1f", fTemp);
+    sprintf(publishString, "Temp %2.2f", fTemp);
     lcd.print(publishString);
     lcd.setCursor(0,3);
-    sprintf(publishString, "Humidity: %2.1f", humidity);
+    sprintf(publishString, "Humidity: %2.2f", humidity);
     lcd.print(publishString);
 
     //process PID
@@ -304,4 +312,26 @@ int backlightSet(String command){
         }
 	return 1;
 }
+
+int kpSet(String command){
+
+    kp = command.toFloat();
+    myPID.SetTunings(kp, ki, kd);
+
+}
+
+int kiSet(String command){
+
+    ki = command.toFloat();
+    myPID.SetTunings(kp, ki, kd);
+
+}
+
+int kdSet(String command){
+
+    kd = command.toFloat();
+    myPID.SetTunings(kp, ki, kd);
+
+}
+
 
