@@ -60,7 +60,7 @@ double kd=1;   //derivative parameter
 // on it and see what Max would keep it at 1A. The fans also won't start up to something below 
 // around 50 maybe, so I need to be above that. But 90 is fine as they are always going to need
 // more cooling than that.
-double commandMin = 70;
+double commandMin = 50;
 double commandMax = 255;
 // default starter temp. 
 double setTemp = 64.5;
