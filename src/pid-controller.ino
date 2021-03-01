@@ -57,7 +57,7 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars
 //double kp=75;   //proportional parameter
 //double ki=1;   //integral parameter
 //double kd=3;   //derivative parameter
-double kp=200;   //proportional parameter
+double kp=100;   //proportional parameter
 double ki=.5;   //integral parameter
 double kd=2.5;   //derivative parameter
 // Minimum and Maximum PWM command, according fan specs and noise level required
