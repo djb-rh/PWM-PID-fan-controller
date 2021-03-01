@@ -8,9 +8,8 @@
 #include <LiquidCrystal_I2C_Spark.h>
 #include <clickButton.h>
 
-// SHT31 stuff
-#include <application.h>
-#include <spark_wiring_i2c.h>
+#include <Particle.h>
+// #include <spark_wiring_i2c.h>
 
 #include "elapsedMillis.h"
 
@@ -24,13 +23,15 @@ int setFanSpeed(String speed);
 char publishString[40];
 
 //wiring
-int relayPin = D2;
-int fanpin = D3;
-int pinYellow = D6;
-int pinBlue = D7;
+int relayPin = D2;  // not currently actually used
+int fanpin = D3;    // pwm signal out to fan(s)
+int pinYellow = D6; // up
+int pinBlue = D7;   // down
 
 // This all uses the elapsedMillis library to setup the ability to turn on the backlight for 10s at a time
-#define LCD_BACKLIGHT_INTERVAL 60000
+// #define LCD_BACKLIGHT_INTERVAL 60000
+#define LCD_BACKLIGHT_INTERVAL 6000000
+#define SP_INCREMENTS 0.2
 elapsedMillis lcdBacklightInterval;
 bool backlight = false;
 
@@ -52,18 +53,24 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars
 // double kp=2;   //proportional parameter
 // double ki=5;   //integral parameter
 // double kd=1;   //derivative parameter
-double kp=75;   //proportional parameter
-double ki=1;   //integral parameter
-double kd=3;   //derivative parameter
+// these next three work fine for the V1 air handler
+//double kp=75;   //proportional parameter
+//double ki=1;   //integral parameter
+//double kd=3;   //derivative parameter
+double kp=200;   //proportional parameter
+double ki=.5;   //integral parameter
+double kd=2.5;   //derivative parameter
 // Minimum and Maximum PWM command, according fan specs and noise level required
 // My fans draw 1.05A at full bore but my power supply is a 2A (24V), so I may need to put a meter
 // on it and see what Max would keep it at 1A. The fans also won't start up to something below 
 // around 50 maybe, so I need to be above that. But 90 is fine as they are always going to need
 // more cooling than that.
-double commandMin = 50;
-double commandMax = 235;
+double commandMin = 20;
+double commandMax = 255;
 // default starter temp. 
 double setTemp = 64.5;
+// stupid variable to see if we've done this thing yet
+int boottask = 0;
 
 // declare my PID. Give it the temp from the sensor, the fanspeed variable to set, the target temp, 
 // the proportioning parameters, and make it REVERSE, which means target cooling.
@@ -80,18 +87,17 @@ void setup()
     Particle.variable("kp", kp);
     Particle.variable("ki", ki);
     Particle.variable("kd", kd);
+    Particle.variable("sp", setTemp);
 
     Particle.function("backlight", backlightSet);
     Particle.function("kp", kpSet);
     Particle.function("ki", kiSet);
     Particle.function("kd", kdSet);
+    Particle.function("sp", spSet);
     
     // listen to turn on or off from main gate ID and call a handler if it changes, same for clubhouse gate
-    Particle.subscribe("main_gate_1", maingateHandler, MY_DEVICES);
-    Particle.subscribe("clubhouse_gate_1", clubgateHandler, MY_DEVICES);
-
-    // do a request for the state and the above subscribes will get called when they see the request
-    Particle.publish("getstate", "1", PRIVATE);
+    Particle.subscribe("main_gate_1", maingateHandler);
+    Particle.subscribe("clubhouse_gate_1", clubgateHandler);
 
     // setup some buttons
     pinMode(pinYellow, INPUT_PULLUP);
@@ -132,11 +138,26 @@ void setup()
     myPID.SetMode(PID::AUTOMATIC);
     myPID.SetOutputLimits(commandMin, commandMax);
 
+    // do a request for the state and the above subscribes will get called when they see the request
+    // delay(10000);
+    // Particle.publish("getstate", "1");
+
+
 }
 
 /* This function loops forever --------------------------------------------*/
 void loop()
 {
+
+    // if we're connected to the cloud and we haven't done this yet, publish the getstate
+    // need this because cloud connection might not happen for a few seconds, but we can be doing other
+    // things until then
+    if(!boottask){
+        if(Particle.connected()){
+            Particle.publish("getstate", "1");
+            boottask=1;
+        }
+    }
     // these functions get the button data
     buttonYellow.Update();
     buttonBlue.Update();
@@ -151,7 +172,7 @@ void loop()
             backlight = true; // backlight is now on
             lcdBacklightInterval = 0;
         } else {
-	        setTemp = setTemp+0.5;
+	        setTemp = setTemp+SP_INCREMENTS;
 	        lcd.setCursor(16,2);
 	        sprintf(publishString, "%3.1f", setTemp);
 	        lcd.print(publishString);
@@ -167,7 +188,7 @@ void loop()
             backlight = true; // backlight is now on
             lcdBacklightInterval = 0;
         } else {
-	        setTemp = setTemp-0.5;
+	        setTemp = setTemp-SP_INCREMENTS;
 	        lcd.setCursor(16,2);
 	        sprintf(publishString, "%3.1f", setTemp);
 	        lcd.print(publishString);
@@ -256,13 +277,16 @@ int mainstatus(String command)
     {
          lcd.setCursor (0, 0);            // go to the 2nd row
          lcd.print("Main Gate: Open     "); // pad string with spaces for centering
+	return 1;
     }
     if(command == "OFF")
     {
          lcd.setCursor (0, 0);            // go to the 2nd row
          lcd.print("Main Gate: Closed    "); // pad string with spaces for centering
+	return 1;
 
     }
+    return 0;
 }
 
 void clubgateHandler(const char *eventname, const char *data)
@@ -277,13 +301,16 @@ int clubstatus(String command)
     {
          lcd.setCursor (0, 1);            // go to the 2nd row
          lcd.print("CH Gate: Open     "); // pad string with spaces for centering
+	return 1;
     }
     if(command == "OFF")
     {
          lcd.setCursor (0, 1);            // go to the 2nd row
          lcd.print("CH Gate: Closed    "); // pad string with spaces for centering
 
+	return 1;
     }
+    return 0;
 }
 
 
@@ -293,7 +320,7 @@ int djbRelay(String command){
 		return 1;
 	}
 	if(command.equalsIgnoreCase("off")){
-		analogWrite(relayPin, LOW);
+		digitalWrite(relayPin, LOW);
 		return 1;
 	}
 	return 0;
@@ -317,6 +344,7 @@ int kpSet(String command){
 
     kp = command.toFloat();
     myPID.SetTunings(kp, ki, kd);
+    return 1;
 
 }
 
@@ -324,6 +352,7 @@ int kiSet(String command){
 
     ki = command.toFloat();
     myPID.SetTunings(kp, ki, kd);
+    return 1;
 
 }
 
@@ -331,6 +360,17 @@ int kdSet(String command){
 
     kd = command.toFloat();
     myPID.SetTunings(kp, ki, kd);
+    return 1;
+
+}
+
+int spSet(String command){
+
+    setTemp = command.toFloat();
+    lcd.setCursor(16,2);
+    sprintf(publishString, "%3.1f", setTemp);
+    lcd.print(publishString);
+    return 1;
 
 }
 
