@@ -29,8 +29,8 @@ int pinYellow = D6; // up
 int pinBlue = D7;   // down
 
 // This all uses the elapsedMillis library to setup the ability to turn on the backlight for 10s at a time
-// #define LCD_BACKLIGHT_INTERVAL 60000
-#define LCD_BACKLIGHT_INTERVAL 6000000
+#define LCD_BACKLIGHT_INTERVAL 60000
+// #define LCD_BACKLIGHT_INTERVAL 6000000
 #define SP_INCREMENTS 0.2
 elapsedMillis lcdBacklightInterval;
 bool backlight = false;
