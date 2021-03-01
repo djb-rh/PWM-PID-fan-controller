@@ -58,8 +58,8 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 20 chars
 //double ki=1;   //integral parameter
 //double kd=3;   //derivative parameter
 double kp=100;   //proportional parameter
-double ki=.5;   //integral parameter
-double kd=2.5;   //derivative parameter
+double ki=.1;   //integral parameter
+double kd=8;   //derivative parameter
 // Minimum and Maximum PWM command, according fan specs and noise level required
 // My fans draw 1.05A at full bore but my power supply is a 2A (24V), so I may need to put a meter
 // on it and see what Max would keep it at 1A. The fans also won't start up to something below 
